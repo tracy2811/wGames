@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Ping Pong</title>
+<style>
+canvas {background: #000; display: block; margin: auto}
+</style>
+	</head>
+	<body>
+		<canvas id="canvas" height="480" width="640"></canvas>
+	</body>
+	<script>
+		var cvs = document.getElementById("canvas");
+		var ctx = cvs.getContext("2d");
+		
+		const WINSCORE = 11;
+
+		// Paddles
+		var paddle = {width: 10, height: 100, speed: 3};
+		var player = {x: 0, y: (cvs.height-paddle.height)/2, score: 0};
+		var comp = {x: cvs.width-paddle.width, y: (cvs.height-paddle.height)/2, score: 0};
+		
+		var ball = {x: cvs.width/2, y: cvs.height/2, r: 20, vx: -Math.random()*2-3, vy: -Math.random()*5};
+		var net = {width: 10, height: 40}
+
+		// Sounds
+		var hitWall = new Audio();
+		var hitPaddle = new Audio();
+		var score = new Audio();
+		var win = new Audio();
+		var lost = new Audio();
+
+		hitWall.src = "sounds/wall.wav";
+		hitPaddle.src = "sounds/paddle.wav";
+		score.src = "sounds/score.wav";
+		win.src = "sounds/win.wav";
+		lost.src = "sounds/loose.wav";
+
+		// Listen to mousemove
+		document.addEventListener("mousemove", mouseMoveHandler, false);
+		// Handle mouse move
+		function mouseMoveHandler(e) {
+			var relativeY = e.clientX - cvs.offsetTop;
+			if (relativeY > 0 && relativeY < cvs.height) {
+				player.y = relativeY - paddle.height;
+			}
+		}
+
+		// Display computer and player score
+		function drawScore() {
+			ctx.font = "64px Arial";
+			ctx.fillStyle = "#fff";
+			// Player score
+			ctx.fillText(player.score, cvs.width/4, cvs.height/5);
+			// Computer score
+			ctx.fillText(comp.score, 3*cvs.width/4, cvs.height/5);
+		}
+
+		// Display net
+		function drawNet() {
+			var x = cvs.width/2 - net.width/2;
+
+			for (var y = 0; y < cvs.height; y += net.height*3/2) {
+				ctx.beginPath();
+				ctx.rect(x, y, net.width, net.height);
+				ctx.fillStyle = "#fff";
+				ctx.fill();
+				ctx.closePath();
+			}
+		}
+
+		// Display paddles
+		function drawPaddle(p) {
+			ctx.beginPath();
+			ctx.rect(p.x, p.y, paddle.width, paddle.height);
+			ctx.fillStyle="#fff";
+			ctx.fill();
+			ctx.closePath();
+		}
+
+		// Display ball
+		function drawBall() {
+			ctx.beginPath();
+			ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2);
+			ctx.fillStyle = "#fff";
+			ctx.fill();
+			ctx.closePath();
+		}
+
+		// Reset ball to center
+		function resetBall() {
+			ball.x = cvs.width/2;
+			ball.y = cvs.height/2;
+		}
+
+		// Alert when player wins
+		function playerWin() {
+			win.play();
+			alert("YOU WIN");
+			document.location.reload();
+		}
+
+		// Alert when player loses
+		function playerLost() {
+			lost.play();
+			alert("YOU LOST");
+			document.location.reload();
+		}
+			
+		// Detect and handle collision
+		function collision() {
+			// Ball hit paddle, change vx
+			if ((ball.x-ball.r <= player.x+paddle.width 
+				&& ball.y-ball.r <= player.y+paddle.height 
+				&& ball.y+ball.r >= player.y) 
+			|| (ball.x+ball.r >= comp.x 
+				&& ball.y-ball.r <= comp.y +paddle.height 
+				&& ball.y+ball.r >= comp.y)) 
+			{
+				ball.vx = -ball.vx;
+				hitPaddle.play();
+			} 
+			// Ball hit upper/lower wall, change vy
+			else if (ball.y < ball.r || ball.y+ball.r > cvs.height) {
+				ball.vy = -ball.vy;
+				hitWall.play();
+			} 
+			// Computer misses ball
+			else if (ball.x > comp.x) {
+				score.play();
+				player.score += 1;
+				resetBall();
+				if (player.score == WINSCORE) {
+					playerWin();
+				}
+			} 
+			// Player misses ball
+			else if (ball.x < player.x + paddle.width) {
+				score.play();
+				comp.score += 1;
+				resetBall();
+				if (comp.score == WINSCORE) {
+					playerLost();
+				}
+			}
+		}
+
+		// AI for computer
+		function compMove() {
+			if (ball.vx > 0) {
+				if (ball.y > comp.y) {
+					comp.y += paddle.speed;
+				} else if (ball.y < comp.y) {
+					comp.y -= paddle.speed;
+				}
+			}
+		}
+
+		// Render game
+		function draw() {
+			ctx.clearRect(0, 0, cvs.width, cvs.height);
+			drawScore();
+			drawNet();
+			drawPaddle(player);
+			drawPaddle(comp);
+			drawBall();
+
+			collision();
+
+			ball.x += ball.vx;
+			ball.y += ball.vy;
+			compMove();
+
+			requestAnimationFrame(draw);
+		}
+
+		draw();
+	</script>
+</html>
