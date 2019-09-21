@@ -1,2 +1,2 @@
-# wGames
-Some small web-based games I did when learning Web Developement.
+# Web Projects
+Some small web-based projects to learn Web Developement.
